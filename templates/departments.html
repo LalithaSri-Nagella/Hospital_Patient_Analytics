@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Departments{% endblock %}
+{% block page_title %}Department Management{% endblock %}
+
+{% block content %}
+<div class="departments-wrapper">
+    <!-- Header with Action -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="h3 fw-bold mb-0">Hospital Departments</h1>
+                <span class="badge bg-primary rounded-pill">{{ departments|length }} Total</span>
+            </div>
+            <p class="text-muted mb-0 small">Medical divisions and units configured for patient intake and data aggregation.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('department_create') }}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-building-add me-1"></i> Add Department
+            </a>
+        </div>
+    </div>
+
+    <!-- Referential Integrity Explanation Notice -->
+    <div class="alert alert-light border shadow-sm d-flex align-items-center gap-3 mb-4 py-2.5 px-3">
+        <i class="bi bi-shield-check text-primary fs-4"></i>
+        <div class="small">
+            <strong>Foreign Key Protection:</strong> Departments currently linked to one or more patient visits cannot be deleted. This protects the relational integrity of hospital records and historical analytics.
+        </div>
+    </div>
+
+    <!-- Departments Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if departments %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Department ID</th>
+                                <th style="width: 45%;">Department Name</th>
+                                <th style="width: 20%;">Total Visits Recorded</th>
+                                <th style="width: 20%;" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in departments %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace fs-6">
+                                            #D-{{ "%03d"|format(d.department_id) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-primary">
+                                            <i class="bi bi-hospital me-2 text-muted"></i>{{ d.department_name }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('visits_list', department_id=d.department_id) }}" class="text-decoration-none">
+                                            {% if d.total_visits > 0 %}
+                                                <span class="badge badge-soft-primary px-2.5 py-1.5">
+                                                    {{ d.total_visits }} visit{% if d.total_visits != 1 %}s{% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-light text-muted border px-2.5 py-1.5">0 visits</span>
+                                            {% endif %}
+                                        </a>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{{ url_for('department_edit', dept_id=d.department_id) }}" class="btn btn-sm btn-light py-1 px-2 border" title="Edit Department">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <!-- Delete Form Trigger with CSRF -->
+                                            <form method="POST" action="{{ url_for('department_delete', dept_id=d.department_id) }}" class="d-inline" onsubmit="return confirm('Delete department \'{{ d.department_name }}\'? Note: This will be rejected if existing visits are assigned to it.');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Delete Department">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div class="empty-state-title">No departments configured</div>
+                    <div class="empty-state-desc">
+                        There are no medical departments registered in the database yet.
+                    </div>
+                    <a href="{{ url_for('department_create') }}" class="btn btn-primary btn-sm">Add First Department</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Patients{% endblock %}
+{% block page_title %}Patient Management{% endblock %}
+
+{% block content %}
+<div class="patients-wrapper">
+    <!-- Header with Action -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="h3 fw-bold mb-0">Patients Directory</h1>
+                <span class="badge bg-primary rounded-pill">{{ total_items }} Total</span>
+            </div>
+            <p class="text-muted mb-0 small">Fictional demographic records only. Patient IDs are generated automatically.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('patient_create') }}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-person-plus me-1"></i> Add New Patient
+            </a>
+        </div>
+    </div>
+
+    <!-- Search, Filter & Sort Controls Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('patients_list') }}" class="row g-2 align-items-end">
+                <!-- Search by ID -->
+                <div class="col-md-3">
+                    <label class="form-label" for="searchInput">Search Patient ID</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" class="form-control" id="searchInput" name="search" value="{{ search }}" placeholder="e.g. 12">
+                    </div>
+                </div>
+
+                <!-- Filter by Age Group -->
+                <div class="col-md-2">
+                    <label class="form-label" for="ageFilter">Age Group</label>
+                    <select class="form-select" id="ageFilter" name="age_group">
+                        <option value="">All Age Groups</option>
+                        {% for grp in allowed_age_groups %}
+                            <option value="{{ grp }}" {% if age_filter == grp %}selected{% endif %}>{{ grp }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filter by Gender -->
+                <div class="col-md-2">
+                    <label class="form-label" for="genderFilter">Gender</label>
+                    <select class="form-select" id="genderFilter" name="gender">
+                        <option value="">All Genders</option>
+                        {% for g_opt in allowed_genders %}
+                            <option value="{{ g_opt }}" {% if gender_filter == g_opt %}selected{% endif %}>{{ g_opt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sort By -->
+                <div class="col-md-2">
+                    <label class="form-label" for="sortBy">Sort By</label>
+                    <select class="form-select" id="sortBy" name="sort_by">
+                        <option value="patient_id" {% if sort_by == 'patient_id' %}selected{% endif %}>Patient ID</option>
+                        <option value="age_group" {% if sort_by == 'age_group' %}selected{% endif %}>Age Group</option>
+                        <option value="gender" {% if sort_by == 'gender' %}selected{% endif %}>Gender</option>
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Created Date</option>
+                    </select>
+                </div>
+
+                <!-- Sort Order -->
+                <div class="col-md-1">
+                    <label class="form-label" for="sortOrder">Order</label>
+                    <select class="form-select" id="sortOrder" name="order">
+                        <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Asc</option>
+                        <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Desc</option>
+                    </select>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-1"></i> Apply
+                    </button>
+                    {% if search or age_filter or gender_filter or sort_by != 'patient_id' or sort_order != 'asc' %}
+                        <a href="{{ url_for('patients_list') }}" class="btn btn-outline-secondary" title="Reset Filters">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Patients Data Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if patients %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Patient ID</th>
+                                <th style="width: 25%;">Age Group</th>
+                                <th style="width: 25%;">Gender</th>
+                                <th style="width: 20%;">Registered On</th>
+                                <th style="width: 15%;" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in patients %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace fs-6">
+                                            #P-{{ "%04d"|format(p.patient_id) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-soft-primary px-2.5 py-1.5">
+                                            <i class="bi bi-tag me-1"></i>{{ p.age_group }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if p.gender == 'Male' %}
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                <i class="bi bi-gender-male me-1"></i>Male
+                                            </span>
+                                        {% elif p.gender == 'Female' %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                <i class="bi bi-gender-female me-1"></i>Female
+                                            </span>
+                                        {% elif p.gender %}
+                                            <span class="badge bg-secondary-subtle text-secondary border">
+                                                <i class="bi bi-gender-ambiguous me-1"></i>{{ p.gender }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted small">Not specified</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted">
+                                        {{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at is not string else p.created_at }}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{{ url_for('visit_create', patient_id=p.patient_id) }}" class="btn btn-sm btn-outline-success py-1 px-2" title="Log Visit for this Patient">
+                                                <i class="bi bi-plus-lg"></i>
+                                            </a>
+                                            <a href="{{ url_for('patient_edit', patient_id=p.patient_id) }}" class="btn btn-sm btn-light py-1 px-2 border" title="Edit Patient">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <!-- Delete Form Trigger with CSRF -->
+                                            <form method="POST" action="{{ url_for('patient_delete', patient_id=p.patient_id) }}" class="d-inline" onsubmit="return confirm('Delete Patient #P-{{ '%04d'|format(p.patient_id) }}? Note: This will automatically delete any associated visit records.');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Delete Patient">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                {% if total_pages > 1 %}
+                    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-2 px-3">
+                        <small class="text-muted">
+                            Showing page {{ page }} of {{ total_pages }} ({{ total_items }} total records)
+                        </small>
+                        <nav aria-label="Patients pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('patients_list', page=page-1, search=search, age_group=age_filter, gender=gender_filter, sort_by=sort_by, order=sort_order) }}">
+                                        Previous
+                                    </a>
+                                </li>
+                                {% for p_num in range(1, total_pages + 1) %}
+                                    {% if p_num == page or (p_num >= page - 2 and p_num <= page + 2) or p_num == 1 or p_num == total_pages %}
+                                        <li class="page-item {% if p_num == page %}active{% endif %}">
+                                            <a class="page-link" href="{{ url_for('patients_list', page=p_num, search=search, age_group=age_filter, gender=gender_filter, sort_by=sort_by, order=sort_order) }}">
+                                                {{ p_num }}
+                                            </a>
+                                        </li>
+                                    {% elif p_num == page - 3 or p_num == page + 3 %}
+                                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                                    {% endif %}
+                                {% endfor %}
+                                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('patients_list', page=page+1, search=search, age_group=age_filter, gender=gender_filter, sort_by=sort_by, order=sort_order) }}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-person-x"></i>
+                    </div>
+                    <div class="empty-state-title">No patients found</div>
+                    <div class="empty-state-desc">
+                        {% if search or age_filter or gender_filter %}
+                            No patient records match the applied search/filter criteria. Try clearing filters.
+                        {% else %}
+                            No patients currently exist in the database.
+                        {% endif %}
+                    </div>
+                    {% if search or age_filter or gender_filter %}
+                        <a href="{{ url_for('patients_list') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+                    {% else %}
+                        <a href="{{ url_for('patient_create') }}" class="btn btn-primary btn-sm">Add First Patient</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

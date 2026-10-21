@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Operational Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Top Welcome Banner -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Hospital Patient Dashboard</h1>
+            <p class="text-muted mb-0">Real-time overview of hospital patient intake, department volumes, and visit trends.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('visit_create') }}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-calendar-plus me-1"></i> New Visit
+            </a>
+            <a href="{{ url_for('analytics_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-bar-chart-line me-1"></i> Detailed Analytics
+            </a>
+        </div>
+    </div>
+
+    <!-- Live Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Patients -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Total Patients</div>
+                    <div class="stat-value" id="statTotalPatients">{{ stats.total_patients }}</div>
+                    <small class="text-muted">Registered demographics</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Total Visits -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Total Visits</div>
+                    <div class="stat-value" id="statTotalVisits">{{ stats.total_visits }}</div>
+                    <small class="text-muted">Historical records</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-success">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Total Departments -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Total Departments</div>
+                    <div class="stat-value" id="statTotalDepts">{{ stats.total_departments }}</div>
+                    <small class="text-muted">Active medical units</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-info">
+                    <i class="bi bi-hospital-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Visits This Month -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Visits This Month</div>
+                    <div class="stat-value" id="statVisitsMonth">{{ stats.visits_this_month }}</div>
+                    <small class="text-primary fw-medium">{{ now().strftime('%B %Y') }}</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-warning">
+                    <i class="bi bi-activity"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1: Monthly Trend & Department Breakdown -->
+    <div class="row g-4 mb-4">
+        <!-- Monthly Visit Trends (Line Chart) -->
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold">
+                        <i class="bi bi-graph-up me-2 text-primary"></i>Monthly Visit Trends
+                    </div>
+                    <span class="badge bg-light text-muted border">Live Database Feed</span>
+                </div>
+                <div class="card-body">
+                    <div style="height: 290px;">
+                        <canvas id="monthlyTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Visit Counts (Bar Chart) -->
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold">
+                        <i class="bi bi-bar-chart-fill me-2 text-primary"></i>Visits by Department
+                    </div>
+                    <span class="badge bg-light text-muted border">All-Time</span>
+                </div>
+                <div class="card-body">
+                    <div style="height: 290px;">
+                        <canvas id="deptVisitsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2: Visit Types Doughnut & Recent Visits Table -->
+    <div class="row g-4 mb-4">
+        <!-- Doughnut Chart: Visit Types -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold">
+                        <i class="bi bi-pie-chart-fill me-2 text-primary"></i>Visit Types Breakdown
+                    </div>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    <div style="height: 240px; width: 100%;">
+                        <canvas id="visitTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Visits Table -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold">
+                        <i class="bi bi-clock-history me-2 text-primary"></i>Recent Patient Visits
+                    </div>
+                    <a href="{{ url_for('visits_list') }}" class="btn btn-sm btn-outline-primary">
+                        View All Visits <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Visit ID</th>
+                                    <th>Patient ID</th>
+                                    <th>Department</th>
+                                    <th>Visit Date</th>
+                                    <th>Visit Type</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_visits %}
+                                    {% for v in recent_visits %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-light text-dark border font-monospace">#V-{{ "%04d"|format(v.visit_id) }}</span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('patients_list', search=v.patient_id) }}" class="fw-semibold text-decoration-none">
+                                                    #P-{{ "%04d"|format(v.patient_id) }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary-subtle text-secondary">{{ v.department_name }}</span>
+                                            </td>
+                                            <td class="text-muted">
+                                                {{ v.visit_date.strftime('%Y-%m-%d') if v.visit_date is not string else v.visit_date }}
+                                            </td>
+                                            <td>
+                                                {% if v.visit_type == 'Emergency' %}
+                                                    <span class="badge badge-soft-danger">Emergency</span>
+                                                {% elif v.visit_type == 'Inpatient' %}
+                                                    <span class="badge badge-soft-warning">Inpatient</span>
+                                                {% elif v.visit_type == 'Outpatient' %}
+                                                    <span class="badge badge-soft-primary">Outpatient</span>
+                                                {% elif v.visit_type == 'Follow-up' %}
+                                                    <span class="badge badge-soft-info">Follow-up</span>
+                                                {% else %}
+                                                    <span class="badge badge-soft-success">Routine Checkup</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ url_for('visit_edit', visit_id=v.visit_id) }}" class="btn btn-sm btn-light py-0 px-2" title="Edit Visit">
+                                                    <i class="bi bi-pencil text-muted"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
+                                            No visit records logged yet.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Chart 1: Monthly Visit Trends
+    const monthlyLabels = {{ charts.monthly_labels | tojson }};
+    const monthlyData = {{ charts.monthly_counts | tojson }};
+    
+    const ctxMonthly = document.getElementById('monthlyTrendChart').getContext('2d');
+    new Chart(ctxMonthly, {
+        type: 'line',
+        data: {
+            labels: monthlyLabels.length > 0 ? monthlyLabels : ['No Data'],
+            datasets: [{
+                label: 'Visits',
+                data: monthlyData.length > 0 ? monthlyData : [0],
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#2563eb',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 10,
+                    titleFont: { size: 13, weight: 'bold' }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: '#f1f5f9' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Chart 2: Visits by Department
+    const deptLabels = {{ charts.dept_labels | tojson }};
+    const deptData = {{ charts.dept_counts | tojson }};
+    
+    const ctxDept = document.getElementById('deptVisitsChart').getContext('2d');
+    new Chart(ctxDept, {
+        type: 'bar',
+        data: {
+            labels: deptLabels.length > 0 ? deptLabels : ['No Data'],
+            datasets: [{
+                label: 'Visits',
+                data: deptData.length > 0 ? deptData : [0],
+                backgroundColor: '#3b82f6',
+                borderRadius: 4,
+                maxBarThickness: 32
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 10
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: '#f1f5f9' }
+                },
+                x: {
+                    ticks: { autoSkip: false, maxRotation: 45, minRotation: 30 },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Chart 3: Visit Types Doughnut
+    const typeLabels = {{ charts.type_labels | tojson }};
+    const typeData = {{ charts.type_counts | tojson }};
+    
+    const ctxType = document.getElementById('visitTypeChart').getContext('2d');
+    new Chart(ctxType, {
+        type: 'doughnut',
+        data: {
+            labels: typeLabels.length > 0 ? typeLabels : ['No Data'],
+            datasets: [{
+                data: typeData.length > 0 ? typeData : [1],
+                backgroundColor: [
+                    '#ef4444', // Emergency
+                    '#f59e0b', // Inpatient
+                    '#2563eb', // Outpatient
+                    '#06b6d4', // Follow-up
+                    '#10b981'  // Routine Checkup
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, padding: 12, font: { size: 12 } }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+});
+</script>
+{% endblock %}

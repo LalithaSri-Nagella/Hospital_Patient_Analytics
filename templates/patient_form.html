@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Patient{% endblock %}
+{% block page_title %}{{ action }} Patient{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <!-- Breadcrumb back link -->
+        <div class="mb-3">
+            <a href="{{ url_for('patients_list') }}" class="text-decoration-none text-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Back to Patients Directory
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon-wrapper stat-icon-primary me-3" style="width: 40px; height: 40px; font-size: 1.1rem;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div>
+                        <h2 class="h5 fw-bold mb-0">{{ action }} Patient Record</h2>
+                        <small class="text-muted">
+                            {% if action == 'Edit' %}
+                                Modifying demographics for Patient #P-{{ "%04d"|format(patient_id) }}
+                            {% else %}
+                                System will automatically generate a new unique Patient ID
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="alert alert-info py-2 px-3 small mb-4">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    <strong>Privacy Notice:</strong> In compliance with project guidelines, this system stores fictional demographic attributes only. No personally identifiable medical data is collected.
+                </div>
+
+                <form method="POST" novalidate>
+                    <!-- CSRF Security Token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Age Group Selection (Required) -->
+                    <div class="mb-3">
+                        <label for="ageGroupSelect" class="form-label">
+                            Age Group <span class="text-danger">*</span>
+                        </label>
+                        <select 
+                            class="form-select {% if errors.age_group %}is-invalid{% endif %}" 
+                            id="ageGroupSelect" 
+                            name="age_group" 
+                            required
+                        >
+                            <option value="">-- Select Age Bracket --</option>
+                            {% for grp in allowed_age_groups %}
+                                <option value="{{ grp }}" {% if form_data.age_group == grp %}selected{% endif %}>
+                                    {{ grp }} years
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.age_group %}
+                            <div class="invalid-feedback">{{ errors.age_group }}</div>
+                        {% else %}
+                            <div class="form-text">Mandatory field for statistical aggregation.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Gender Selection (Optional) -->
+                    <div class="mb-4">
+                        <label for="genderSelect" class="form-label">
+                            Gender <span class="text-muted small">(Optional)</span>
+                        </label>
+                        <select 
+                            class="form-select {% if errors.gender %}is-invalid{% endif %}" 
+                            id="genderSelect" 
+                            name="gender"
+                        >
+                            <option value="">-- Prefer Not to Specify / Unknown --</option>
+                            {% for g_opt in allowed_genders %}
+                                <option value="{{ g_opt }}" {% if form_data.gender == g_opt %}selected{% endif %}>
+                                    {{ g_opt }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.gender %}
+                            <div class="invalid-feedback">{{ errors.gender }}</div>
+                        {% else %}
+                            <div class="form-text">Optional demographic indicator.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a href="{{ url_for('patients_list') }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check2 me-1"></i>
+                            {% if action == 'Edit' %}Update Patient{% else %}Save Patient{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

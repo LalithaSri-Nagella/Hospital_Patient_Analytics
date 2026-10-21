@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Visits{% endblock %}
+{% block page_title %}Visit Management{% endblock %}
+
+{% block content %}
+<div class="visits-wrapper">
+    <!-- Header with Action -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="h3 fw-bold mb-0">Patient Visits Log</h1>
+                <span class="badge bg-primary rounded-pill">{{ total_items }} Total Records</span>
+            </div>
+            <p class="text-muted mb-0 small">Comprehensive database of all registered clinical, emergency, and outpatient visits.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('export_visits', department_id=dept_filter, visit_type=type_filter, start_date=start_date, end_date=end_date) }}" class="btn btn-outline-success">
+                <i class="bi bi-filetype-csv me-1"></i> Export Filtered CSV
+            </a>
+            <a href="{{ url_for('visit_create') }}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Record New Visit
+            </a>
+        </div>
+    </div>
+
+    <!-- Search, Filter & Date Range Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('visits_list') }}" class="row g-2 align-items-end">
+                <!-- Search ID -->
+                <div class="col-md-2">
+                    <label class="form-label" for="searchVisit">Search ID / Patient</label>
+                    <input type="text" class="form-control" id="searchVisit" name="search" value="{{ search }}" placeholder="e.g. 5">
+                </div>
+
+                <!-- Department Filter -->
+                <div class="col-md-2">
+                    <label class="form-label" for="deptFilter">Department</label>
+                    <select class="form-select" id="deptFilter" name="department_id">
+                        <option value="">All Departments</option>
+                        {% for d in departments %}
+                            <option value="{{ d.department_id }}" {% if dept_filter == d.department_id|string %}selected{% endif %}>
+                                {{ d.department_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Visit Type Filter -->
+                <div class="col-md-2">
+                    <label class="form-label" for="typeFilter">Visit Type</label>
+                    <select class="form-select" id="typeFilter" name="visit_type">
+                        <option value="">All Types</option>
+                        {% for t_opt in allowed_visit_types %}
+                            <option value="{{ t_opt }}" {% if type_filter == t_opt %}selected{% endif %}>
+                                {{ t_opt }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Start Date -->
+                <div class="col-md-2">
+                    <label class="form-label" for="startDate">From Date</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date" value="{{ start_date }}">
+                </div>
+
+                <!-- End Date -->
+                <div class="col-md-2">
+                    <label class="form-label" for="endDate">To Date</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date" value="{{ end_date }}">
+                </div>
+
+                <!-- Actions -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-1"></i> Filter
+                    </button>
+                    {% if search or dept_filter or type_filter or start_date or end_date %}
+                        <a href="{{ url_for('visits_list') }}" class="btn btn-outline-secondary" title="Reset Filters">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Visits Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if visits %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 12%;">Visit ID</th>
+                                <th style="width: 15%;">Patient ID</th>
+                                <th style="width: 18%;">Patient Info</th>
+                                <th style="width: 20%;">Department</th>
+                                <th style="width: 15%;">Visit Date</th>
+                                <th style="width: 10%;">Visit Type</th>
+                                <th style="width: 10%;" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in visits %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace fs-6">
+                                            #V-{{ "%04d"|format(v.visit_id) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('patients_list', search=v.patient_id) }}" class="fw-semibold text-decoration-none" title="Filter by Patient">
+                                            #P-{{ "%04d"|format(v.patient_id) }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted small">Age:</span> <strong class="small">{{ v.age_group }}</strong>
+                                        {% if v.gender %}
+                                            <span class="text-muted small ms-1">({{ v.gender }})</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary-subtle text-secondary px-2.5 py-1.5">
+                                            <i class="bi bi-building me-1"></i>{{ v.department_name }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted">
+                                        {{ v.visit_date.strftime('%Y-%m-%d') if v.visit_date is not string else v.visit_date }}
+                                    </td>
+                                    <td>
+                                        {% if v.visit_type == 'Emergency' %}
+                                            <span class="badge badge-soft-danger px-2.5 py-1.5">Emergency</span>
+                                        {% elif v.visit_type == 'Inpatient' %}
+                                            <span class="badge badge-soft-warning px-2.5 py-1.5">Inpatient</span>
+                                        {% elif v.visit_type == 'Outpatient' %}
+                                            <span class="badge badge-soft-primary px-2.5 py-1.5">Outpatient</span>
+                                        {% elif v.visit_type == 'Follow-up' %}
+                                            <span class="badge badge-soft-info px-2.5 py-1.5">Follow-up</span>
+                                        {% else %}
+                                            <span class="badge badge-soft-success px-2.5 py-1.5">Routine Checkup</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{{ url_for('visit_edit', visit_id=v.visit_id) }}" class="btn btn-sm btn-light py-1 px-2 border" title="Edit Visit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <!-- Delete Form Trigger with CSRF -->
+                                            <form method="POST" action="{{ url_for('visit_delete', visit_id=v.visit_id) }}" class="d-inline" onsubmit="return confirm('Delete Visit record #V-{{ '%04d'|format(v.visit_id) }}?');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Delete Visit">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                {% if total_pages > 1 %}
+                    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-2 px-3">
+                        <small class="text-muted">
+                            Showing page {{ page }} of {{ total_pages }} ({{ total_items }} total records)
+                        </small>
+                        <nav aria-label="Visits pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('visits_list', page=page-1, search=search, department_id=dept_filter, visit_type=type_filter, start_date=start_date, end_date=end_date, sort_by=sort_by, order=sort_order) }}">
+                                        Previous
+                                    </a>
+                                </li>
+                                {% for p_num in range(1, total_pages + 1) %}
+                                    {% if p_num == page or (p_num >= page - 2 and p_num <= page + 2) or p_num == 1 or p_num == total_pages %}
+                                        <li class="page-item {% if p_num == page %}active{% endif %}">
+                                            <a class="page-link" href="{{ url_for('visits_list', page=p_num, search=search, department_id=dept_filter, visit_type=type_filter, start_date=start_date, end_date=end_date, sort_by=sort_by, order=sort_order) }}">
+                                                {{ p_num }}
+                                            </a>
+                                        </li>
+                                    {% elif p_num == page - 3 or p_num == page + 3 %}
+                                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                                    {% endif %}
+                                {% endfor %}
+                                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('visits_list', page=page+1, search=search, department_id=dept_filter, visit_type=type_filter, start_date=start_date, end_date=end_date, sort_by=sort_by, order=sort_order) }}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-calendar-x"></i>
+                    </div>
+                    <div class="empty-state-title">No visits recorded</div>
+                    <div class="empty-state-desc">
+                        {% if search or dept_filter or type_filter or start_date or end_date %}
+                            No visit records match the selected filter criteria. Try broadening your date range or filters.
+                        {% else %}
+                            No hospital visits have been logged yet.
+                        {% endif %}
+                    </div>
+                    {% if search or dept_filter or type_filter or start_date or end_date %}
+                        <a href="{{ url_for('visits_list') }}" class="btn btn-outline-secondary btn-sm">Reset Filters</a>
+                    {% else %}
+                        <a href="{{ url_for('visit_create') }}" class="btn btn-primary btn-sm">Record First Visit</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
