@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard{% endblock %}
+{% block page_title %}Clinical Dashboard{% endblock %}
+
+{% block content %}
+<div class="doctor-dashboard-wrapper">
+    <!-- Top Welcome Banner -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge badge-role badge-role-doctor"><i class="bi bi-heart-pulse"></i> Doctor Portal</span>
+                <span class="text-muted small">&bull; Clinical Intake &amp; Registry</span>
+            </div>
+            <h1 class="h3 fw-bold mb-1">Clinical Operations Dashboard</h1>
+            <p class="text-muted mb-0">Overview of patient demographics, clinical visits registry, and hospital intake volumes.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('visit_create') }}" class="btn btn-primary shadow-sm" id="doctorNewVisitBtn">
+                <i class="bi bi-calendar-plus me-1"></i> Record Visit
+            </a>
+            <a href="{{ url_for('patient_create') }}" class="btn btn-outline-secondary" id="doctorNewPatientBtn">
+                <i class="bi bi-person-plus me-1"></i> Register Patient
+            </a>
+        </div>
+    </div>
+
+    <!-- Live Clinical KPI Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Patients -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Patient Registry</div>
+                    <div class="stat-value" id="statDoctorPatients">{{ stats.total_patients }}</div>
+                    <small class="text-muted">Total demographic profiles</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Total Visits -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Clinical Visits</div>
+                    <div class="stat-value" id="statDoctorVisits">{{ stats.total_visits }}</div>
+                    <small class="text-muted">Logged patient encounters</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-success">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Active Clinical Departments -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Clinical Units</div>
+                    <div class="stat-value" id="statDoctorDepts">{{ stats.total_departments }}</div>
+                    <small class="text-muted">Active hospital services</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-info">
+                    <i class="bi bi-hospital"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Visits This Month -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Visits This Month</div>
+                    <div class="stat-value text-primary" id="statDoctorMonth">{{ stats.visits_this_month }}</div>
+                    <small class="text-muted">{{ now().strftime('%B %Y') }} volume</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-warning">
+                    <i class="bi bi-activity"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinical Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Patient Demographics Breakdown -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h6 fw-bold mb-0">Patient Age Demographics Breakdown</h2>
+                        <small class="text-muted">Distribution across age demographics</small>
+                    </div>
+                    <span class="badge bg-light text-muted border">Demographics</span>
+                </div>
+                <div class="card-body">
+                    <div style="height: 280px; position: relative;">
+                        <canvas id="doctorAgeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 2: Visit Types Distribution -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h6 fw-bold mb-0">Clinical Visit Types Distribution</h2>
+                        <small class="text-muted">Proportion of Emergency, Routine, Outpatient, etc.</small>
+                    </div>
+                    <span class="badge bg-light text-muted border">Intake Types</span>
+                </div>
+                <div class="card-body">
+                    <div style="height: 280px; position: relative;">
+                        <canvas id="doctorTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Patient Visits Log Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="h6 fw-bold mb-0">
+                    <i class="bi bi-clock-history text-primary me-2"></i>
+                    Recent Clinical Visits Registry
+                </h2>
+                <small class="text-muted">Latest patient check-ins and clinical appointments</small>
+            </div>
+            <a href="{{ url_for('visits_list') }}" class="btn btn-outline-secondary btn-sm">
+                View All Visits <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="doctorRecentVisitsTable">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-3">Visit ID</th>
+                        <th>Patient ID</th>
+                        <th>Demographics</th>
+                        <th>Department</th>
+                        <th>Visit Date</th>
+                        <th>Visit Type</th>
+                        <th class="text-end pe-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if recent_visits %}
+                        {% for v in recent_visits %}
+                            <tr>
+                                <td class="ps-3 font-monospace fw-semibold text-primary">#V-{{ "%04d"|format(v.visit_id) }}</td>
+                                <td class="font-monospace">
+                                    <span class="badge bg-light text-dark border">#P-{{ "%04d"|format(v.patient_id) }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary me-1">{{ v.age_group }}</span>
+                                    <span class="text-muted small">{{ v.gender or 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <span class="fw-medium text-dark"><i class="bi bi-hospital me-1 text-muted"></i>{{ v.department_name }}</span>
+                                </td>
+                                <td class="small text-muted">
+                                    {{ v.visit_date.strftime('%d %b %Y') if v.visit_date else '—' }}
+                                </td>
+                                <td>
+                                    {% if v.visit_type == 'Emergency' %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Emergency</span>
+                                    {% elif v.visit_type == 'Inpatient' %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Inpatient</span>
+                                    {% elif v.visit_type == 'Routine Checkup' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Routine Checkup</span>
+                                    {% else %}
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle">{{ v.visit_type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a href="{{ url_for('visit_edit', visit_id=v.visit_id) }}" class="btn btn-outline-secondary btn-sm" title="Edit Clinical Visit">
+                                        <i class="bi bi-pencil me-1"></i> Edit
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No clinical visits recorded yet.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ageData = {{ charts.age | tojson }};
+    const typeData = {{ charts.types | tojson }};
+
+    // Age Demographics Bar Chart
+    const ageCtx = document.getElementById('doctorAgeChart');
+    if (ageCtx && ageData.labels.length > 0) {
+        new Chart(ageCtx, {
+            type: 'bar',
+            data: {
+                labels: ageData.labels,
+                datasets: [{
+                    label: 'Patients',
+                    data: ageData.data,
+                    backgroundColor: 'rgba(2, 132, 199, 0.75)',
+                    borderColor: 'rgb(2, 132, 199)',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // Visit Types Doughnut Chart
+    const typeCtx = document.getElementById('doctorTypeChart');
+    if (typeCtx && typeData.labels.length > 0) {
+        new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: typeData.labels,
+                datasets: [{
+                    data: typeData.data,
+                    backgroundColor: [
+                        '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

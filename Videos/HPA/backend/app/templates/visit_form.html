@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Visit{% endblock %}
+{% block page_title %}{{ action }} Patient Visit{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <!-- Breadcrumb back link -->
+        <div class="mb-3">
+            <a href="{{ url_for('visits_list') }}" class="text-decoration-none text-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Back to Visits Log
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon-wrapper stat-icon-success me-3" style="width: 40px; height: 40px; font-size: 1.1rem;">
+                        <i class="bi bi-calendar2-check-fill"></i>
+                    </div>
+                    <div>
+                        <h2 class="h5 fw-bold mb-0">{{ action }} Visit Entry</h2>
+                        <small class="text-muted">
+                            {% if action == 'Edit' %}
+                                Editing Visit #V-{{ "%04d"|format(visit_id) }}
+                            {% else %}
+                                Link an existing registered patient with a hospital department
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    <!-- CSRF Token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Patient ID Selection -->
+                    <div class="mb-3">
+                        <label for="patientIdInput" class="form-label">
+                            Patient ID <span class="text-danger">*</span>
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input 
+                                    type="number" 
+                                    class="form-control {% if errors.patient_id %}is-invalid{% endif %}" 
+                                    id="patientIdInput" 
+                                    name="patient_id" 
+                                    value="{{ form_data.patient_id }}" 
+                                    placeholder="e.g. 1" 
+                                    required
+                                >
+                            </div>
+                            <div class="col-md-7">
+                                <select class="form-select text-muted" id="patientQuickSelect" onchange="document.getElementById('patientIdInput').value = this.value;">
+                                    <option value="">-- Or choose recent patient --</option>
+                                    {% for p in patients %}
+                                        <option value="{{ p.patient_id }}" {% if form_data.patient_id|string == p.patient_id|string %}selected{% endif %}>
+                                            #P-{{ "%04d"|format(p.patient_id) }} (Age: {{ p.age_group }}{% if p.gender %}, {{ p.gender }}{% endif %})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        {% if errors.patient_id %}
+                            <div class="text-danger small mt-1">{{ errors.patient_id }}</div>
+                        {% else %}
+                            <div class="form-text">Enter an existing Patient ID or select one from the dropdown list.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Department Selection (From Database) -->
+                    <div class="mb-3">
+                        <label for="departmentSelect" class="form-label">
+                            Department <span class="text-danger">*</span>
+                        </label>
+                        <select 
+                            class="form-select {% if errors.department_id %}is-invalid{% endif %}" 
+                            id="departmentSelect" 
+                            name="department_id" 
+                            required
+                        >
+                            <option value="">-- Select Medical Department --</option>
+                            {% for d in departments %}
+                                <option value="{{ d.department_id }}" {% if form_data.department_id|string == d.department_id|string %}selected{% endif %}>
+                                    {{ d.department_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.department_id %}
+                            <div class="invalid-feedback">{{ errors.department_id }}</div>
+                        {% else %}
+                            <div class="form-text">Loaded live from the MySQL departments table.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Visit Date Selection -->
+                    <div class="mb-3">
+                        <label for="visitDateInput" class="form-label">
+                            Visit Date <span class="text-danger">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            class="form-control {% if errors.visit_date %}is-invalid{% endif %}" 
+                            id="visitDateInput" 
+                            name="visit_date" 
+                            value="{{ form_data.visit_date }}" 
+                            required
+                        >
+                        {% if errors.visit_date %}
+                            <div class="invalid-feedback">{{ errors.visit_date }}</div>
+                        {% else %}
+                            <div class="form-text">Date when the patient was seen or admitted.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Visit Type Selection -->
+                    <div class="mb-4">
+                        <label for="visitTypeSelect" class="form-label">
+                            Visit Type <span class="text-danger">*</span>
+                        </label>
+                        <select 
+                            class="form-select {% if errors.visit_type %}is-invalid{% endif %}" 
+                            id="visitTypeSelect" 
+                            name="visit_type" 
+                            required
+                        >
+                            <option value="">-- Select Type of Encounter --</option>
+                            {% for vt in allowed_visit_types %}
+                                <option value="{{ vt }}" {% if form_data.visit_type == vt %}selected{% endif %}>
+                                    {{ vt }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.visit_type %}
+                            <div class="invalid-feedback">{{ errors.visit_type }}</div>
+                        {% else %}
+                            <div class="form-text">Classification for departmental reporting and analytics.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a href="{{ url_for('visits_list') }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check2 me-1"></i>
+                            {% if action == 'Edit' %}Update Visit{% else %}Record Visit{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

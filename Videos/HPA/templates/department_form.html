@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Department{% endblock %}
+{% block page_title %}{{ action }} Department{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <!-- Breadcrumb back link -->
+        <div class="mb-3">
+            <a href="{{ url_for('departments_list') }}" class="text-decoration-none text-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Back to Departments
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon-wrapper stat-icon-info me-3" style="width: 40px; height: 40px; font-size: 1.1rem;">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div>
+                        <h2 class="h5 fw-bold mb-0">{{ action }} Department</h2>
+                        <small class="text-muted">
+                            {% if action == 'Edit' %}
+                                Editing Department #D-{{ "%03d"|format(dept_id) }}
+                            {% else %}
+                                Add a new clinical or administrative department
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    <!-- CSRF Token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Department Name -->
+                    <div class="mb-4">
+                        <label for="deptNameInput" class="form-label">
+                            Department Name <span class="text-danger">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control {% if errors.department_name %}is-invalid{% endif %}" 
+                            id="deptNameInput" 
+                            name="department_name" 
+                            value="{{ department_name }}" 
+                            placeholder="e.g. Cardiology, Oncology, Neurology" 
+                            maxlength="100"
+                            required
+                        >
+                        {% if errors.department_name %}
+                            <div class="invalid-feedback">{{ errors.department_name }}</div>
+                        {% else %}
+                            <div class="form-text">Must be unique across all departments (2 - 100 characters).</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a href="{{ url_for('departments_list') }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check2 me-1"></i>
+                            {% if action == 'Edit' %}Update Department{% else %}Create Department{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

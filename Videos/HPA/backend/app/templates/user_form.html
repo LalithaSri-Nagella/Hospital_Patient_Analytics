@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} User Account{% endblock %}
+{% block page_title %}{{ action }} Staff Account{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">
+                            <i class="bi bi-person-badge text-primary me-2"></i>
+                            {{ action }} Staff Account
+                        </h2>
+                        <small class="text-muted">
+                            {% if action == 'Create' %}
+                                Provision a new authorized staff member with Administrator, Doctor, or Accountant privileges.
+                            {% else %}
+                                Update profile details and system access role for this staff member.
+                            {% endif %}
+                        </small>
+                    </div>
+                    <a href="{{ url_for('users.users_list') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Users
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST" action="" novalidate id="userForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        <label for="roleSelect" class="form-label fw-semibold">
+                            Staff Role <span class="text-danger">*</span>
+                        </label>
+                        <select 
+                            class="form-select {% if errors and errors.role %}is-invalid{% endif %}" 
+                            id="roleSelect" 
+                            name="role" 
+                            required
+                        >
+                            <option value="doctor" {% if form_data.role == 'doctor' %}selected{% endif %}>Doctor — Clinical intake &amp; patient visits registry</option>
+                            <option value="accountant" {% if form_data.role == 'accountant' %}selected{% endif %}>Accountant — Operational workload &amp; analytical trends</option>
+                            <option value="administrator" {% if form_data.role == 'administrator' %}selected{% endif %}>Administrator — Complete system &amp; user management</option>
+                        </select>
+                        <div class="form-text small">
+                            Role determines the specific dashboard and system modules permitted for this user.
+                        </div>
+                        {% if errors and errors.role %}
+                            <div class="invalid-feedback">{{ errors.role }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Username -->
+                    <div class="mb-3">
+                        <label for="usernameInput" class="form-label fw-semibold">
+                            Username <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">@</span>
+                            <input 
+                                type="text" 
+                                class="form-control {% if errors and errors.username %}is-invalid{% endif %}" 
+                                id="usernameInput" 
+                                name="username" 
+                                value="{{ form_data.username }}" 
+                                placeholder="e.g. dr_smith or acc_patel" 
+                                required
+                                {% if action == 'Edit' %}readonly disabled{% endif %}
+                            >
+                            {% if errors and errors.username %}
+                                <div class="invalid-feedback">{{ errors.username }}</div>
+                            {% endif %}
+                        </div>
+                        {% if action == 'Edit' %}
+                            <small class="text-muted d-block mt-1">Username cannot be changed after creation.</small>
+                        {% else %}
+                            <div class="form-text small">Unique login identifier (3-50 alphanumeric characters).</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="mb-3">
+                        <label for="fullNameInput" class="form-label fw-semibold">
+                            Full Name <span class="text-danger">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control {% if errors and errors.full_name %}is-invalid{% endif %}" 
+                            id="fullNameInput" 
+                            name="full_name" 
+                            value="{{ form_data.full_name }}" 
+                            placeholder="e.g. Dr. Jane Wilson or Robert Taylor" 
+                            required
+                        >
+                        {% if errors and errors.full_name %}
+                            <div class="invalid-feedback">{{ errors.full_name }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="mb-4">
+                        <label for="emailInput" class="form-label fw-semibold">
+                            Email Address <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
+                            <input 
+                                type="email" 
+                                class="form-control {% if errors and errors.email %}is-invalid{% endif %}" 
+                                id="emailInput" 
+                                name="email" 
+                                value="{{ form_data.email }}" 
+                                placeholder="name@hospital.org" 
+                                required
+                            >
+                            {% if errors and errors.email %}
+                                <div class="invalid-feedback">{{ errors.email }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if action == 'Create' %}
+                    <!-- Password & Confirmation (Only on Create) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="passwordInput" class="form-label fw-semibold">
+                                Initial Password <span class="text-danger">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                class="form-control {% if errors and errors.password %}is-invalid{% endif %}" 
+                                id="passwordInput" 
+                                name="password" 
+                                placeholder="Min. 6 characters" 
+                                required
+                            >
+                            {% if errors and errors.password %}
+                                <div class="invalid-feedback">{{ errors.password }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confirmPasswordInput" class="form-label fw-semibold">
+                                Confirm Password <span class="text-danger">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                class="form-control {% if errors and errors.confirm_password %}is-invalid{% endif %}" 
+                                id="confirmPasswordInput" 
+                                name="confirm_password" 
+                                placeholder="Re-enter password" 
+                                required
+                            >
+                            {% if errors and errors.confirm_password %}
+                                <div class="invalid-feedback">{{ errors.confirm_password }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-text small">
+                                <i class="bi bi-shield-check text-success me-1"></i> Passwords are securely hashed with Werkzeug PBKDF2/SHA-256 before storage.
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a href="{{ url_for('users.users_list') }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="saveUserBtn">
+                            <i class="bi bi-check-circle me-1"></i> {{ 'Create Account' if action == 'Create' else 'Save Changes' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

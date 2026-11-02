@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Accountant Dashboard{% endblock %}
+{% block page_title %}Operational &amp; Workload Intelligence{% endblock %}
+
+{% block content %}
+<div class="accountant-dashboard-wrapper">
+    <!-- Top Welcome Banner -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge badge-role badge-role-accountant"><i class="bi bi-graph-up"></i> Accountant Portal</span>
+                <span class="text-muted small">&bull; Operational Intelligence</span>
+            </div>
+            <h1 class="h3 fw-bold mb-1">Operational &amp; Workload Dashboard</h1>
+            <p class="text-muted mb-0">Aggregate visit volumes, department-level workloads, patient demographics, and operational trends.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('analytics_dashboard') }}" class="btn btn-primary shadow-sm" id="accountantAnalyticsBtn">
+                <i class="bi bi-bar-chart-line me-1"></i> Detailed Analytics
+            </a>
+            <div class="btn-group">
+                <a href="{{ url_for('analytics.export_visits') }}" class="btn btn-outline-secondary" id="accountantExportVisitsBtn">
+                    <i class="bi bi-download me-1"></i> Export Visits CSV
+                </a>
+                <a href="{{ url_for('analytics.export_summary') }}" class="btn btn-outline-secondary" id="accountantExportSummaryBtn">
+                    <i class="bi bi-file-earmark-text me-1"></i> Executive Summary
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Operational KPI Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Visits -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Total Visits</div>
+                    <div class="stat-value" id="statAccountantVisits">{{ stats.total_visits }}</div>
+                    <small class="text-muted">Recorded patient visits</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-primary">
+                    <i class="bi bi-calendar2-check-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Total Patients -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Total Patients</div>
+                    <div class="stat-value" id="statAccountantPatients">{{ stats.total_patients }}</div>
+                    <small class="text-muted">Registered demographics</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-success">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Operating Departments -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Operating Units</div>
+                    <div class="stat-value" id="statAccountantDepts">{{ stats.total_departments }}</div>
+                    <small class="text-muted">Active hospital services</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-info">
+                    <i class="bi bi-hospital"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Average Visits Per Department -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-title">Avg Visits / Unit</div>
+                    <div class="stat-value text-primary" id="statAccountantAvg">{{ stats.avg_visits_per_dept }}</div>
+                    <small class="text-muted">Per department workload</small>
+                </div>
+                <div class="stat-icon-wrapper stat-icon-warning">
+                    <i class="bi bi-pie-chart-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operational Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Department Workload Allocation -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h6 fw-bold mb-0">Department Workload Distribution</h2>
+                        <small class="text-muted">Total recorded visits per medical department</small>
+                    </div>
+                    <span class="badge bg-light text-muted border">Workload</span>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="accountantDeptChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 2: Monthly Visit Volume Trends -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h6 fw-bold mb-0">Monthly Visit Volume Trend</h2>
+                        <small class="text-muted">Historical monthly patient intake</small>
+                    </div>
+                    <span class="badge bg-light text-muted border">Trend Analysis</span>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="accountantMonthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Workload Allocation Summary Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="h6 fw-bold mb-0">
+                    <i class="bi bi-building-check text-primary me-2"></i>
+                    Department-Wise Workload &amp; Operational Breakdown
+                </h2>
+                <small class="text-muted">Detailed allocation of visits and unique patients across hospital departments</small>
+            </div>
+            <a href="{{ url_for('analytics_dashboard') }}" class="btn btn-outline-primary btn-sm">
+                View Full Analytics <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="accountantWorkloadTable">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-3">Department Name</th>
+                        <th class="text-center">Total Visits</th>
+                        <th class="text-center">Unique Patients</th>
+                        <th>Workload Share</th>
+                        <th>Latest Logged Visit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if dept_workload %}
+                        {% for d in dept_workload %}
+                            <tr>
+                                <td class="ps-3 fw-semibold text-dark">
+                                    <i class="bi bi-hospital me-1.5 text-primary"></i>
+                                    {{ d.department_name }}
+                                </td>
+                                <td class="text-center font-monospace fw-bold text-dark">
+                                    {{ d.total_visits }}
+                                </td>
+                                <td class="text-center font-monospace text-muted">
+                                    {{ d.unique_patients }}
+                                </td>
+                                <td style="min-width: 180px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 7px;">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ d.workload_share }}%;" aria-valuenow="{{ d.workload_share }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <span class="small font-monospace text-muted">{{ d.workload_share }}%</span>
+                                    </div>
+                                </td>
+                                <td class="small text-muted">
+                                    {{ d.latest_visit_date.strftime('%d %b %Y') if d.latest_visit_date else '—' }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No department workload records available.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const deptData = {{ charts.departments | tojson }};
+    const monthlyData = {{ charts.monthly | tojson }};
+
+    // Department Workload Horizontal Bar Chart
+    const deptCtx = document.getElementById('accountantDeptChart');
+    if (deptCtx && deptData.labels.length > 0) {
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: deptData.labels,
+                datasets: [{
+                    label: 'Visits',
+                    data: deptData.data,
+                    backgroundColor: 'rgba(13, 148, 136, 0.75)',
+                    borderColor: 'rgb(13, 148, 136)',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // Monthly Intake Trend Line Chart
+    const monthlyCtx = document.getElementById('accountantMonthlyChart');
+    if (monthlyCtx && monthlyData.labels.length > 0) {
+        new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [{
+                    label: 'Monthly Intake',
+                    data: monthlyData.data,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#2563eb',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
